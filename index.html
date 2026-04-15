@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="description" content="SUNO STUDIO PRO — Make your music. Now. GGLabs Bolivia"/>
+<title>SUNO STUDIO PRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05050e;
+  --violet:#7c3aed;
+  --cyan:#06b6d4;
+  --magenta:#e879f9;
+  --white:#f8f8ff;
+  --glass:rgba(255,255,255,0.04);
+  --glass-border:rgba(255,255,255,0.08);
+  --nav-h:64px;
+  --bottom-nav:60px;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:'Syne',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  padding-bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom));
+}
+/* CANVAS BACKGROUND */
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+/* ORBS */
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;animation:orbFloat linear infinite}
+.orb-1{width:500px;height:500px;background:radial-gradient(circle,rgba(124,58,237,0.18) 0%,transparent 70%);top:-100px;left:-150px;animation-duration:25s}
+.orb-2{width:400px;height:400px;background:radial-gradient(circle,rgba(6,182,212,0.14) 0%,transparent 70%);bottom:-80px;right:-100px;animation-duration:30s;animation-delay:-10s}
+.orb-3{width:300px;height:300px;background:radial-gradient(circle,rgba(232,121,249,0.12) 0%,transparent 70%);top:40%;left:60%;animation-duration:20s;animation-delay:-5s}
+@keyframes orbFloat{
+  0%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(30px,-40px) scale(1.05)}
+  66%{transform:translate(-20px,30px) scale(0.95)}
+  100%{transform:translate(0,0) scale(1)}
+}
+/* AUDIO VISUALIZER */
+#visualizer{
+  position:fixed;bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom) + 8px);left:16px;
+  display:flex;align-items:flex-end;gap:3px;z-index:10;pointer-events:none;
+}
+.viz-bar{width:4px;border-radius:2px;background:linear-gradient(to top,var(--violet),var(--cyan));min-height:4px;transition:height 0.05s}
+#viz-label{position:fixed;bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom));left:16px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,0.22);z-index:10;pointer-events:none}
+/* TOPBAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--nav-h);
+  background:rgba(5,5,14,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;z-index:100;
+}
+#logo{font-size:18px;font-weight:900;letter-spacing:-0.5px;display:flex;align-items:center;gap:10px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse-dot 1.5s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+.logo-badge{font-size:11px;font-weight:700;background:var(--violet);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+#max-btn{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:13px;
+  background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);
+  color:var(--white);padding:8px 16px;border-radius:8px;cursor:pointer;
+  transition:all 0.3s;letter-spacing:0.5px;
+}
+#max-btn:hover{background:rgba(124,58,237,0.4);box-shadow:0 0 20px rgba(124,58,237,0.4)}
+#max-btn.active{background:rgba(239,68,68,0.3);border-color:rgba(239,68,68,0.6);animation:pulse-red 1.5s ease-in-out infinite}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 20px rgba(239,68,68,0.3)}}
+/* TABS DESKTOP */
+#tabs-desktop{
+  position:fixed;top:var(--nav-h);left:0;right:0;
+  background:rgba(5,5,14,0.65);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  padding:8px 16px;z-index:99;overflow-x:auto;
+  scrollbar-width:none;
+}
+#tabs-desktop::-webkit-scrollbar{display:none}
+.tab-pill{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:13px;
+  padding:8px 18px;border-radius:20px;cursor:pointer;
+  border:1px solid transparent;transition:all 0.25s;white-space:nowrap;
+  color:rgba(255,255,255,0.55);background:transparent;
+}
+.tab-pill:hover{color:var(--white);background:rgba(255,255,255,0.06)}
+.tab-pill.active{color:var(--white);background:rgba(124,58,237,0.25);border-color:rgba(124,58,237,0.5);box-shadow:0 0 16px rgba(124,58,237,0.2)}
+/* MAIN CONTENT */
+#main{margin-top:calc(var(--nav-h) + 52px);padding:20px 16px;max-width:960px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
+/* SECTIONS */
+.section{display:none}
+.section.active{display:block}
+/* CARDS */
+.card{
+  background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:16px;padding:20px;
+  box-shadow:0 0 40px rgba(124,58,237,0.12);
+  animation:floatCard 6s ease-in-out infinite;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:box-shadow 0.3s;
+}
+.card:hover{box-shadow:0 0 60px rgba(124,58,237,0.28)}
+@keyframes floatCard{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:640px){.card-grid{grid-template-columns:1fr}}
+.card-title{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:14px;font-family:'JetBrains Mono',monospace}
+/* INPUTS */
+label{font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+input[type=text],select,textarea{
+  width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;padding:10px 14px;color:var(--white);font-family:'Syne',sans-serif;font-size:14px;
+  outline:none;transition:all 0.25s;
+}
+input[type=text]:focus,select:focus,textarea:focus{
+  border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,0.2);
+  background:rgba(124,58,237,0.08);
+}
+select{cursor:pointer}
+select option{background:#0d0d1a;color:var(--white)}
+textarea{resize:vertical;min-height:80px}
+/* AUTOCOMPLETE */
+.autocomplete-wrap{position:relative}
+.autocomplete-list{
+  position:absolute;top:100%;left:0;right:0;z-index:200;
+  background:#0d0d1a;border:1px solid rgba(124,58,237,0.3);border-radius:10px;
+  margin-top:4px;overflow:hidden;display:none;
+}
+.autocomplete-list.show{display:block}
+.autocomplete-item{padding:10px 14px;font-size:13px;cursor:pointer;transition:background 0.15s}
+.autocomplete-item:hover{background:rgba(124,58,237,0.2)}
+/* CHIPS */
+.chip-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{
+  font-size:11px;font-family:'JetBrains Mono',monospace;padding:4px 10px;
+  border-radius:20px;border:1px solid rgba(255,255,255,0.15);
+  cursor:pointer;transition:all 0.2s;color:rgba(255,255,255,0.65);
+  background:rgba(255,255,255,0.04);
+}
+.chip:hover,.chip.active{background:rgba(124,58,237,0.25);border-color:var(--violet);color:var(--white)}
+/* SLIDER */
+.slider-wrap{margin-bottom:4px}
+input[type=range]{
+  width:100%;-webkit-appearance:none;appearance:none;
+  height:4px;border-radius:2px;background:rgba(255,255,255,0.1);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));cursor:pointer;
+  box-shadow:0 0 10px rgba(124,58,237,0.5);
+}
+.bpm-label{font-size:11px;color:var(--cyan);font-family:'JetBrains Mono',monospace;margin-top:6px}
+/* MOOD SELECT */
+.mood-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:400px){.mood-grid{grid-template-columns:1fr}}
+.mood-option{
+  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+  cursor:pointer;transition:all 0.2s;font-size:12px;background:rgba(255,255,255,0.03);
+}
+.mood-option:hover{border-color:rgba(124,58,237,0.5);background:rgba(124,58,237,0.1)}
+.mood-option.selected{border-color:var(--violet);background:rgba(124,58,237,0.2);box-shadow:0 0 12px rgba(124,58,237,0.2)}
+/* STRUCTURE OPTIONS */
+.struct-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.struct-option{
+  padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+  cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,0.03);
+}
+.struct-option:hover{border-color:rgba(6,182,212,0.4);background:rgba(6,182,212,0.06)}
+.struct-option.selected{border-color:var(--cyan);background:rgba(6,182,212,0.12)}
+.struct-diagram{display:flex;gap:3px;align-items:flex-end;flex-shrink:0}
+.struct-diagram span{border-radius:2px;background:linear-gradient(to top,var(--violet),var(--cyan))}
+/* LANG CHIPS */
+.lang-group{display:flex;gap:8px;flex-wrap:wrap}
+.lang-chip{
+  padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.15);
+  cursor:pointer;font-weight:700;font-size:12px;transition:all 0.2s;
+  background:rgba(255,255,255,0.04);font-family:'JetBrains Mono',monospace;
+}
+.lang-chip.active{background:rgba(6,182,212,0.25);border-color:var(--cyan);color:var(--cyan)}
+/* IDEA BAR */
+#idea-bar{
+  background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);
+  border-radius:16px;padding:20px;margin-bottom:20px;
+}
+#idea-input{min-height:56px;font-size:15px;font-family:'Syne',sans-serif}
+#build-btn{
+  margin-top:12px;width:100%;
+  background:rgba(124,58,237,0.25);border:1px solid rgba(124,58,237,0.5);
+  color:var(--white);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;
+  padding:11px;border-radius:10px;cursor:pointer;transition:all 0.25s;
+}
+#build-btn:hover{background:rgba(124,58,237,0.45);box-shadow:0 0 20px rgba(124,58,237,0.3)}
+.suggestion-chips{margin-top:10px}
+/* MAX MODE TOGGLE CARD */
+#max-card{
+  background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);
+  border-radius:16px;padding:20px;margin-bottom:16px;
+}
+.toggle-row{display:flex;align-items:center;justify-content:space-between}
+.toggle-label{font-weight:700;font-size:15px}
+.toggle-sub{font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px;font-family:'JetBrains Mono',monospace}
+.toggle-switch{position:relative;width:52px;height:28px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,0.12);transition:all 0.3s;
+}
+.toggle-slider::before{
+  content:'';position:absolute;width:22px;height:22px;border-radius:50%;
+  background:var(--white);top:3px;left:3px;transition:all 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider{background:rgba(239,68,68,0.7);box-shadow:0 0 20px rgba(239,68,68,0.4)}
+.toggle-switch input:checked + .toggle-slider::before{transform:translateX(24px)}
+/* GENERATE BUTTON */
+#gen-btn{
+  width:100%;margin:16px 0;padding:18px;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));
+  border:none;border-radius:14px;color:var(--white);
+  font-family:'Syne',sans-serif;font-weight:900;font-size:18px;
+  cursor:pointer;position:relative;overflow:hidden;
+  box-shadow:0 0 30px rgba(124,58,237,0.35);transition:all 0.3s;
+  letter-spacing:0.5px;
+}
+#gen-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--cyan),var(--magenta),var(--violet));
+  opacity:0;transition:opacity 0.3s;
+}
+#gen-btn:hover::before{opacity:1}
+#gen-btn:hover{box-shadow:0 0 50px rgba(124,58,237,0.5);transform:translateY(-1px)}
+#gen-btn span{position:relative;z-index:1}
+#gen-btn.loading{pointer-events:none;opacity:0.8}
+/* RESULT BLOCK */
+#result-area{display:none;margin-bottom:16px}
+.code-block{
+  background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;padding:16px;position:relative;
+  font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;
+  color:rgba(255,255,255,0.9);white-space:pre-wrap;word-break:break-word;
+}
+.code-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.code-header h4{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace}
+.copy-btn{
+  font-size:11px;font-family:'JetBrains Mono',monospace;padding:5px 12px;
+  border-radius:6px;border:1px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.06);color:var(--white);cursor:pointer;transition:all 0.2s;
+}
+.copy-btn:hover{background:rgba(124,58,237,0.3);border-color:var(--violet)}
+.max-codes{
+  margin-top:12px;padding:12px;border-radius:10px;
+  background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:#fca5a5;
+}
+.save-btn{
+  margin-top:12px;width:100%;padding:10px;border-radius:10px;
+  background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);
+  color:#4ade80;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;
+  cursor:pointer;transition:all 0.2s;
+}
+.save-btn:hover{background:rgba(34,197,94,0.2)}
+/* HISTORY */
+#history-section{margin-top:24px}
+.hist-title{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.hist-item{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:12px 16px;margin-bottom:8px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.hist-preview{font-size:12px;color:rgba(255,255,255,0.55);font-family:'JetBrains Mono',monospace;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.hist-ts{font-size:10px;color:rgba(255,255,255,0.25);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.hist-actions{display:flex;gap:6px;flex-shrink:0}
+.hist-btn{
+  font-size:10px;padding:4px 8px;border-radius:5px;cursor:pointer;
+  border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.6);
+  font-family:'JetBrains Mono',monospace;transition:all 0.2s;
+}
+.hist-btn.restore:hover{border-color:var(--cyan);color:var(--cyan)}
+.hist-btn.del:hover{border-color:#f87171;color:#f87171}
+/* SECTION HEADERS */
+.sec-header{margin-bottom:24px}
+.sec-title{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:6px}
+.sec-sub{font-size:13px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace}
+/* MAX MODE SECTION */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:500px){.stat-row{grid-template-columns:repeat(2,1fr)}}
+.stat-card{
+  text-align:center;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.25);
+  border-radius:12px;padding:16px 10px;
+}
+.stat-num{font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--violet),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:10px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace;margin-top:4px}
+/* PLAYS */
+.play-card{
+  background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:16px;padding:24px;margin-bottom:16px;cursor:pointer;
+  transition:all 0.3s;box-shadow:0 0 40px rgba(124,58,237,0.1);
+  animation:floatCard 6s ease-in-out infinite;
+}
+.play-card:hover{box-shadow:0 0 60px rgba(124,58,237,0.3);transform:scale(1.01) translateY(-2px)}
+.play-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.play-icon{font-size:24px}
+.play-title{font-size:18px;font-weight:800}
+.play-tag{font-size:10px;font-family:'JetBrains Mono',monospace;padding:3px 10px;border-radius:20px;margin-left:auto}
+.tag-amber{background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);color:#fbbf24}
+.tag-violet{background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);color:#a78bfa}
+.tag-red{background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#f87171}
+.tag-green{background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.4);color:#4ade80}
+.play-desc{font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:12px}
+.play-content{display:none;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08)}
+.play-content.open{display:block}
+/* VIDEOS */
+.video-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.vf-chip{font-size:11px;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.15);cursor:pointer;transition:all 0.2s;color:rgba(255,255,255,0.55);font-family:'JetBrains Mono',monospace}
+.vf-chip.active,.vf-chip:hover{background:rgba(124,58,237,0.2);border-color:var(--violet);color:var(--white)}
+.video-stats{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.vstat{font-size:12px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.4)}
+.vstat strong{color:var(--cyan)}
+.video-card{
+  background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:14px;overflow:hidden;margin-bottom:10px;transition:all 0.25s;
+}
+.video-card:hover{border-color:rgba(124,58,237,0.4)}
+.video-header{
+  display:flex;align-items:center;gap:12px;padding:16px;cursor:pointer;
+}
+.video-num{font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.25);width:32px;flex-shrink:0;text-align:center}
+.video-info{flex:1}
+.video-title{font-size:14px;font-weight:700;margin-bottom:2px}
+.video-url{font-size:10px;color:var(--violet);font-family:'JetBrains Mono',monospace}
+.video-toggle{color:rgba(255,255,255,0.3);transition:transform 0.2s}
+.video-toggle.open{transform:rotate(90deg)}
+.video-body{display:none;padding:0 16px 16px;border-top:1px solid rgba(255,255,255,0.06)}
+.video-body.open{display:block}
+.ts-list{margin-top:10px}
+.ts-item{
+  display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;
+  font-size:12px;font-family:'JetBrains Mono',monospace;
+}
+.ts-time{
+  color:var(--cyan);text-decoration:none;flex-shrink:0;
+  padding:2px 8px;border-radius:5px;border:1px solid rgba(6,182,212,0.3);
+  transition:all 0.2s;
+}
+.ts-time:hover{background:rgba(6,182,212,0.15);color:var(--white)}
+.ts-desc{color:rgba(255,255,255,0.6);padding-top:2px}
+.ts-star{color:#fbbf24;margin-left:4px}
+/* CHECKLIST */
+.check-progress-wrap{margin-bottom:24px}
+.check-progress-bar-bg{width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden}
+.check-progress-bar{height:100%;border-radius:4px;background:linear-gradient(to right,var(--violet),var(--cyan));transition:width 0.4s ease}
+.check-progress-label{font-size:12px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.45);margin-bottom:8px}
+.check-item{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all 0.25s;
+}
+.check-item:hover{background:rgba(255,255,255,0.05)}
+.check-item.done{background:rgba(34,197,94,0.06);border-color:rgba(34,197,94,0.2)}
+.check-circle{
+  width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all 0.25s;
+}
+.check-item.done .check-circle{border-color:#22c55e;background:#22c55e}
+.check-tick{font-size:12px;color:var(--white);opacity:0;transition:opacity 0.2s}
+.check-item.done .check-tick{opacity:1}
+.check-text{font-size:14px;font-weight:600;transition:all 0.25s}
+.check-item.done .check-text{color:rgba(255,255,255,0.4);text-decoration:line-through}
+.check-num{font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.2);margin-left:auto;flex-shrink:0}
+#reset-check{
+  margin-top:16px;width:100%;padding:12px;border-radius:10px;
+  background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);
+  color:#f87171;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;transition:all 0.2s;
+}
+#reset-check:hover{background:rgba(239,68,68,0.15)}
+/* FLOATING ASSISTANT */
+#assist-btn{
+  position:fixed;right:16px;bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom) + 12px);
+  width:56px;height:56px;border-radius:50%;z-index:200;cursor:pointer;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));
+  border:none;font-size:22px;
+  box-shadow:0 0 30px rgba(124,58,237,0.5);transition:all 0.3s;
+  display:flex;align-items:center;justify-content:center;
+}
+#assist-btn:hover{transform:scale(1.1);box-shadow:0 0 50px rgba(124,58,237,0.7)}
+#assist-panel{
+  position:fixed;right:16px;
+  bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom) + 80px);
+  width:300px;max-height:70vh;border-radius:16px;
+  background:rgba(10,8,24,0.95);border:1px solid rgba(124,58,237,0.3);
+  box-shadow:0 0 60px rgba(124,58,237,0.25);
+  z-index:199;display:none;flex-direction:column;overflow:hidden;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+#assist-panel.open{display:flex}
+.ap-header{
+  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.08);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.ap-header h3{font-size:14px;font-weight:800}
+.ap-close{background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:18px;line-height:1}
+.ap-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin}
+.msg{max-width:90%;font-size:12px;line-height:1.6;padding:10px 12px;border-radius:10px;font-family:'JetBrains Mono',monospace;word-break:break-word}
+.msg.user{align-self:flex-end;background:rgba(124,58,237,0.3);border:1px solid rgba(124,58,237,0.4)}
+.msg.bot{align-self:flex-start;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1)}
+.ap-input-row{padding:12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:8px;flex-shrink:0}
+.ap-input-row input{flex:1;font-size:12px;padding:8px 12px}
+.ap-send{
+  padding:8px 14px;border-radius:8px;background:var(--violet);border:none;
+  color:var(--white);font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;flex-shrink:0;
+}
+.ap-send:hover{background:#6d28d9}
+/* BOTTOM NAV (MOBILE) */
+#bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  height:calc(var(--bottom-nav) + env(safe-area-inset-bottom));
+  background:rgba(5,5,14,0.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:0 8px;padding-bottom:env(safe-area-inset-bottom);
+  z-index:98;
+}
+.bn-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 12px;cursor:pointer;transition:all 0.2s;border-radius:10px;min-width:56px;
+}
+.bn-item:hover{background:rgba(255,255,255,0.05)}
+.bn-item.active .bn-icon{filter:drop-shadow(0 0 6px var(--violet))}
+.bn-item.active .bn-label{color:var(--violet)}
+.bn-icon{font-size:20px;line-height:1}
+.bn-label{font-size:9px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.4);letter-spacing:0.5px}
+/* FLOATING NOTE */
+.float-note{
+  position:fixed;pointer-events:none;z-index:9999;
+  font-size:20px;animation:noteFloat 800ms ease-out forwards;
+}
+@keyframes noteFloat{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-80px) scale(1.3)}
+}
+/* UTILITIES */
+.gradient-text{background:linear-gradient(135deg,var(--violet),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.shimmer{background-size:200% 100%;animation:shimmer 2s linear infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.mb-12{margin-bottom:12px}
+.mb-16{margin-bottom:16px}
+.gap-12{gap:12px}
+.tag-slide{animation:slideUp 0.4s ease both}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.4);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<canvas id="bg-canvas"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- VISUALIZER -->
+<div id="visualizer"></div>
+<div id="viz-label">GGLabs · In Extremis</div>
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <div id="logo">
+    <div class="logo-dot"></div>
+    SUNO STUDIO PRO
+    <span class="logo-badge">GGLabs</span>
+  </div>
+  <button id="max-btn" onclick="toggleMaxMode(this)">⚡ MAX MODE</button>
+</header>
+
+<!-- TABS DESKTOP -->
+<nav id="tabs-desktop">
+  <button class="tab-pill active" onclick="switchTab('studio',this)">🎛️ STUDIO</button>
+  <button class="tab-pill" onclick="switchTab('maxmode',this)">⚡ MAX MODE</button>
+  <button class="tab-pill" onclick="switchTab('plays',this)">📼 PLAYS</button>
+  <button class="tab-pill" onclick="switchTab('videos',this)">▶ VIDEOS</button>
+  <button class="tab-pill" onclick="switchTab('check',this)">✓ CHECK</button>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+<!-- ===== STUDIO ===== -->
+<section id="sec-studio" class="section active">
+  <div id="idea-bar">
+    <label style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:10px;font-family:'Syne',sans-serif">✦ Idea rápida</label>
+    <textarea id="idea-input" placeholder="Describe tu canción... ej: una balada oscura sobre perder algo que nunca fue tuyo"></textarea>
+    <button id="build-btn" onclick="buildFromIdea()">✦ Construir desde idea</button>
+    <div class="suggestion-chips chip-group">
+      <span class="chip" onclick="setIdea(this)">balada oscura</span>
+      <span class="chip" onclick="setIdea(this)">trap agresivo</span>
+      <span class="chip" onclick="setIdea(this)">techno épico</span>
+      <span class="chip" onclick="setIdea(this)">folk íntimo</span>
+      <span class="chip" onclick="setIdea(this)">pop viral</span>
+      <span class="chip" onclick="setIdea(this)">reggaeton romántico</span>
+      <span class="chip" onclick="setIdea(this)">metal celta</span>
+      <span class="chip" onclick="setIdea(this)">jazz lo-fi</span>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <!-- Card 1: Sonido -->
+    <div class="card">
+      <div class="card-title">🎵 Sonido</div>
+      <label>Género</label>
+      <div class="autocomplete-wrap mb-12">
+        <input type="text" id="genre" placeholder="trap, pop, reggaeton..." autocomplete="off" oninput="showAC(this,'ac-genre',genres)"/>
+        <div id="ac-genre" class="autocomplete-list"></div>
+      </div>
+      <label>Sub-género</label>
+      <input type="text" id="subgenre" class="mb-12" placeholder="ej: dark trap, melodic"/>
+      <label>Mood</label>
+      <div class="mood-grid" id="mood-grid">
+        <div class="mood-option" data-mood="emotional, dark, nostalgic" onclick="selMood(this)">🌑 Dark & Nostálgico</div>
+        <div class="mood-option" data-mood="energetic, hype, aggressive" onclick="selMood(this)">⚡ Energético & Agresivo</div>
+        <div class="mood-option" data-mood="romantic, smooth, sensual" onclick="selMood(this)">💜 Romántico & Sensual</div>
+        <div class="mood-option" data-mood="melancholic, introspective, cinematic" onclick="selMood(this)">🎬 Melancólico & Cinemático</div>
+        <div class="mood-option" data-mood="happy, uplifting, euphoric" onclick="selMood(this)">☀️ Feliz & Eufórico</div>
+        <div class="mood-option" data-mood="mysterious, ethereal, dreamy" onclick="selMood(this)">🌙 Misterioso & Etéreo</div>
+        <div class="mood-option" data-mood="raw, gritty, streetwise" onclick="selMood(this)">🔥 Raw & Callejero</div>
+        <div class="mood-option" data-mood="epic, triumphant, orchestral" onclick="selMood(this)">👑 Épico & Triunfal</div>
+      </div>
+    </div>
+
+    <!-- Card 2: Ritmo & Voz -->
+    <div class="card">
+      <div class="card-title">🎤 Ritmo & Voz</div>
+      <label>BPM: <span id="bpm-val">120</span> — <span id="bpm-speed" style="color:var(--cyan)">Medio</span></label>
+      <div class="slider-wrap mb-12">
+        <input type="range" id="bpm" min="60" max="200" value="120" oninput="updateBpm(this)"/>
+      </div>
+      <label>Tipo de voz</label>
+      <select id="voice" class="mb-12">
+        <option value="masculine expressive">Masculina expresiva</option>
+        <option value="powerful female">Femenina poderosa</option>
+        <option value="deep male">Masculina grave</option>
+        <option value="ethereal female">Femenina etérea</option>
+        <option value="classical soprano">Soprano clásica</option>
+        <option value="instrumental only">Solo instrumental</option>
+        <option value="male female duet">Dueto</option>
+      </select>
+      <label>Idioma</label>
+      <div class="lang-group" id="lang-group">
+        <span class="lang-chip active" data-lang="ES" onclick="selLang(this)">ES</span>
+        <span class="lang-chip" data-lang="EN" onclick="selLang(this)">EN</span>
+        <span class="lang-chip" data-lang="PT" onclick="selLang(this)">PT</span>
+        <span class="lang-chip" data-lang="FR" onclick="selLang(this)">FR</span>
+        <span class="lang-chip" data-lang="DE" onclick="selLang(this)">DE</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <!-- Card 3: Estructura -->
+    <div class="card">
+      <div class="card-title">🏗️ Estructura</div>
+      <div class="struct-grid" id="struct-grid">
+        <div class="struct-option selected" data-struct="[Intro][Verse][Chorus][Verse][Bridge][Chorus][Outro]" onclick="selStruct(this)">
+          <div class="struct-diagram">
+            <span style="width:6px;height:12px"></span><span style="width:8px;height:20px"></span><span style="width:10px;height:28px"></span><span style="width:8px;height:20px"></span><span style="width:6px;height:16px"></span><span style="width:10px;height:28px"></span><span style="width:6px;height:10px"></span>
+          </div>
+          <div><div style="font-weight:700;font-size:13px">🎯 Completa</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Intro-Verso-Coro-Bridge-Outro</div></div>
+        </div>
+        <div class="struct-option" data-struct="[Hook][Verse][Hook][Verse][Hook]" onclick="selStruct(this)">
+          <div class="struct-diagram">
+            <span style="width:10px;height:30px"></span><span style="width:8px;height:18px"></span><span style="width:10px;height:30px"></span><span style="width:8px;height:18px"></span><span style="width:10px;height:30px"></span>
+          </div>
+          <div><div style="font-weight:700;font-size:13px">📱 TikTok Hook-First</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Sin intro, drop inmediato</div></div>
+        </div>
+        <div class="struct-option" data-struct="[Build][Drop][Verse][Build][Drop][Outro]" onclick="selStruct(this)">
+          <div class="struct-diagram">
+            <span style="width:6px;height:10px"></span><span style="width:8px;height:18px"></span><span style="width:10px;height:32px"></span><span style="width:8px;height:18px"></span><span style="width:10px;height:32px"></span><span style="width:6px;height:8px"></span>
+          </div>
+          <div><div style="font-weight:700;font-size:13px">🎪 Con Drop EDM</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Drop central explosivo</div></div>
+        </div>
+        <div class="struct-option" data-struct="[Intro][Verse][Chorus][Verse][Chorus][Outro]" onclick="selStruct(this)">
+          <div class="struct-diagram">
+            <span style="width:5px;height:10px"></span><span style="width:8px;height:20px"></span><span style="width:10px;height:28px"></span><span style="width:8px;height:20px"></span><span style="width:10px;height:28px"></span><span style="width:5px;height:10px"></span>
+          </div>
+          <div><div style="font-weight:700;font-size:13px">🎸 Formato Radio</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Clásico radio-friendly</div></div>
+        </div>
+        <div class="struct-option" data-struct="[Build][Drop][Break][Build][Drop]" onclick="selStruct(this)">
+          <div class="struct-diagram">
+            <span style="width:8px;height:16px"></span><span style="width:10px;height:32px"></span><span style="width:4px;height:8px"></span><span style="width:8px;height:16px"></span><span style="width:10px;height:32px"></span>
+          </div>
+          <div><div style="font-weight:700;font-size:13px">🏗️ Build & Drop</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">EDM clásico</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Detalles -->
+    <div class="card">
+      <div class="card-title">🎸 Detalles</div>
+      <label>Instrumentos destacados</label>
+      <div class="autocomplete-wrap mb-12">
+        <input type="text" id="instruments" placeholder="808, piano, guitarra..." autocomplete="off"/>
+      </div>
+      <div class="chip-group mb-12">
+        <span class="chip" onclick="addInstr(this)">808</span>
+        <span class="chip" onclick="addInstr(this)">piano</span>
+        <span class="chip" onclick="addInstr(this)">guitarra flamenca</span>
+        <span class="chip" onclick="addInstr(this)">sintetizador</span>
+        <span class="chip" onclick="addInstr(this)">batería</span>
+        <span class="chip" onclick="addInstr(this)">violín</span>
+        <span class="chip" onclick="addInstr(this)">bajo</span>
+        <span class="chip" onclick="addInstr(this)">trompeta</span>
+      </div>
+      <label>Temática / Letra</label>
+      <input type="text" id="theme" placeholder="amor perdido, nostalgia, calle..."/>
+    </div>
+  </div>
+
+  <!-- Max Mode Toggle -->
+  <div id="max-card">
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">⚡ MAX MODE</div>
+        <div class="toggle-sub">Activa los 4 códigos de calidad máxima</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="max-toggle" onchange="toggleMaxCard(this)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- GENERATE BUTTON -->
+  <button id="gen-btn" onclick="generatePrompt()"><span>✦ GENERAR PROMPT</span></button>
+
+  <!-- RESULT -->
+  <div id="result-area">
+    <div class="code-header"><h4>Prompt generado</h4><button class="copy-btn" onclick="copyResult()">Copiar</button></div>
+    <div class="code-block" id="result-text"></div>
+    <div id="max-result" class="max-codes" style="display:none">
+      <div style="font-size:10px;letter-spacing:1px;color:#fca5a5;margin-bottom:8px">⚡ MAX MODE CODES</div>
+      is mode max<br>quality max max<br>realins max max<br>real instrument max max
+    </div>
+    <button class="save-btn" onclick="saveToHistory()">💾 Guardar en historial</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="history-section">
+    <div class="hist-title">Historial reciente</div>
+    <div id="history-list"></div>
+  </div>
+</section>
+
+<!-- ===== MAX MODE ===== -->
+<section id="sec-maxmode" class="section">
+  <div class="sec-header">
+    <div class="sec-title gradient-text">MAX MODE</div>
+    <div class="sec-sub">Códigos ocultos para calidad máxima en Suno</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-num" data-target="66">0</div><div class="stat-label">% Trap</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="75">0</div><div class="stat-label">% Techno</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="55">0</div><div class="stat-label">% Rock</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="40">0</div><div class="stat-label">% Pop</div></div>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-title" style="color:var(--magenta)">⚡ STYLE MAX MODE</div>
+    <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:14px">Pega estos 4 códigos en el campo <strong>Style</strong> de Suno para activar calidad de producción máxima. Aumenta dramáticamente la nitidez, la mezcla y la instrumentación real.</p>
+    <div class="code-block">is mode max
+quality max max
+realins max max
+real instrument max max</div>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end">
+      <button class="copy-btn" onclick="copyText('is mode max\nquality max max\nrealins max max\nreal instrument max max')">Copiar códigos</button>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-title" style="color:var(--cyan)">🎤 VOCAL MAX MODE</div>
+    <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:14px">Sintaxis especial para los <strong>Lyrics</strong> que elimina intros y mejora pronunciación:</p>
+    <div class="code-block">///
+*****
+///
+start on through "[primera frase de tu canción]"</div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;font-family:'JetBrains Mono',monospace">Efecto: elimina silencios iniciales, la voz entra directa y con pronunciación más clara</p>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end">
+      <button class="copy-btn" onclick="copyText('///\n*****\n///\nstart on through \"[primera frase]\"')">Copiar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="color:var(--violet)">👥 DUET MODE</div>
+    <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:14px">Para generar duetos reales con voces diferenciadas:</p>
+    <div class="code-block">duet start on through
+mail start on "[frase hombre]"
+female start on "[frase mujer]"</div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;font-family:'JetBrains Mono',monospace">Combinar con Max Mode para máxima calidad de ambas voces</p>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end">
+      <button class="copy-btn" onclick="copyText('duet start on through\nmail start on \"[frase hombre]\"\nfemale start on \"[frase mujer]\"')">Copiar</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PLAYS ===== -->
+<section id="sec-plays" class="section">
+  <div class="sec-header">
+    <div class="sec-title gradient-text">PLAYBOOKS</div>
+    <div class="sec-sub">Estrategias probadas para cada objetivo</div>
+  </div>
+
+  <div class="play-card" onclick="togglePlay(this)">
+    <div class="play-header">
+      <span class="play-icon">🌟</span>
+      <div class="play-title">HIT COMERCIAL</div>
+      <span class="play-tag tag-amber">RADIO</span>
+    </div>
+    <div class="play-desc">Estructura radio-friendly optimizada para playlists y reproducciones masivas</div>
+    <div class="play-content">
+      <div class="code-block">pop commercial, melodic, polished production, radio-ready
+[quality max max] [realins max max]
+Mood: uplifting, emotional, singable
+BPM: 100-120, powerful female voice
+Structure: [Intro][Verse][Pre-chorus][Chorus][Verse][Bridge][Chorus][Outro]
+Hook en los primeros 7 segundos, coro memorable y repetible
+Instrumentos: piano driven, orquestación sutil, batería pop</div>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="copy-btn" onclick="event.stopPropagation();copyText('pop commercial, melodic, polished production, radio-ready\n[quality max max] [realins max max]\nMood: uplifting, emotional, singable\nBPM: 100-120, powerful female voice\nStructure: [Intro][Verse][Pre-chorus][Chorus][Verse][Bridge][Chorus][Outro]\nHook en los primeros 7 segundos, coro memorable y repetible\nInstrumentos: piano driven, orquestación sutil, batería pop')">Copiar prompt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="play-card" onclick="togglePlay(this)">
+    <div class="play-header">
+      <span class="play-icon">🎨</span>
+      <div class="play-title">MARCA ARTÍSTICA</div>
+      <span class="play-tag tag-violet">IDENTIDAD</span>
+    </div>
+    <div class="play-desc">Construcción de sonido propio y firma artística reconocible</div>
+    <div class="play-content">
+      <div class="code-block">unique signature sound, artistic identity, experimental
+[is mode max] [quality max max]
+Mood: distinctive, authentic, raw
+BPM: definido por el artista, voice type: expressive
+Instrumentos: firma única (3-4 max), leitmotiv melódico recurrente
+Evitar: sonidos genéricos, producción típica
+Objetivo: sonar a nadie más que a ti mismo</div>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="copy-btn" onclick="event.stopPropagation();copyText('unique signature sound, artistic identity, experimental\n[is mode max] [quality max max]\nMood: distinctive, authentic, raw\nBPM: definido por el artista, voice type: expressive\nInstrumentos: firma única (3-4 max), leitmotiv melódico recurrente\nEvitar: sonidos genéricos, producción típica')">Copiar prompt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="play-card" onclick="togglePlay(this)">
+    <div class="play-header">
+      <span class="play-icon">📱</span>
+      <div class="play-title">VIRAL TIKTOK</div>
+      <span class="play-tag tag-red">VIRAL</span>
+    </div>
+    <div class="play-desc">Hook en 7 segundos, loop perfecto de 15s, estructura sin intro</div>
+    <div class="play-content">
+      <div class="code-block">viral tiktok banger, hook-first, no intro
+[quality max max] [realins max max]
+start on through "[hook potente desde cero]"
+Mood: energetic, catchy, memorable
+BPM: 120-150, sin silencio inicial
+Estructura: Hook 7s → Verso breve → Hook → Drop → Loop
+El primer sonido DEBE ser impactante
+15 segundos perfectamente loopeable</div>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="copy-btn" onclick="event.stopPropagation();copyText('viral tiktok banger, hook-first, no intro\n[quality max max] [realins max max]\nstart on through \"[hook potente]\"\nMood: energetic, catchy, memorable\nBPM: 120-150, sin silencio inicial\n15 segundos perfectamente loopeable')">Copiar prompt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="play-card" onclick="togglePlay(this)">
+    <div class="play-header">
+      <span class="play-icon">🎙️</span>
+      <div class="play-title">STUDIO MODE</div>
+      <span class="play-tag tag-green">PRO</span>
+    </div>
+    <div class="play-desc">Instrumentales profesionales y solos de instrumento de nivel real</div>
+    <div class="play-content">
+      <div class="code-block">studio mode, instrumental only, professional recording
+[is mode max] [quality max max] [realins max max] [real instrument max max]
+Instrumento solista: [especificar]
+Mood: cinematic, expressive, technical
+BPM: 80-140, sin vocals
+Calidad: stem-ready, mezcla limpia, dinámica real
+Usar para: demos, bandas sonoras, bases para rapear</div>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="copy-btn" onclick="event.stopPropagation();copyText('studio mode, instrumental only, professional recording\n[is mode max] [quality max max] [realins max max] [real instrument max max]\nInstrumento solista: [especificar]\nMood: cinematic, expressive, technical\nBPM: 80-140, sin vocals')">Copiar prompt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:8px">
+    <div class="card-title">🧪 Géneros Experimentales Probados</div>
+    <div style="display:grid;gap:10px">
+      <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--violet)">
+        <div style="font-weight:700;font-size:13px">New Yas Break Beat</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace">Mezcla urbana + breaks clásicos. Alta retención en playlists</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--cyan)">
+        <div style="font-weight:700;font-size:13px">Epic Nordic Folk Metal</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace">Folk épico nórdico + metal sinfónico. Muy específico = calidad Suno máxima</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--magenta)">
+        <div style="font-weight:700;font-size:13px">Glitchy Hyper Bob Trap</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace">Trap con glitch art y texturas hiperpop. Para audiencias nicho</div>
+      </div>
+      <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #fbbf24">
+        <div style="font-weight:700;font-size:13px">Géneros propios inventados</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace">Suno responde bien a géneros ficticios muy descriptivos. Sé específico y creativo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== VIDEOS ===== -->
+<section id="sec-videos" class="section">
+  <div class="sec-header">
+    <div class="sec-title gradient-text">VIDEOS</div>
+    <div class="sec-sub">@pilotpulse9 · In Extremis</div>
+  </div>
+  <div class="video-stats">
+    <div class="vstat"><strong>13</strong> videos</div>
+    <div class="vstat"><strong>93</strong> min contenido</div>
+    <div class="vstat"><strong>⭐</strong> momentos críticos</div>
+  </div>
+  <div class="video-filters">
+    <span class="vf-chip active" onclick="filterVids('all',this)">Todos</span>
+    <span class="vf-chip" onclick="filterVids('base',this)">Base</span>
+    <span class="vf-chip" onclick="filterVids('maxmode',this)">Max Mode</span>
+    <span class="vf-chip" onclick="filterVids('viral',this)">Viral</span>
+    <span class="vf-chip" onclick="filterVids('tecnica',this)">Técnica</span>
+  </div>
+  <div id="videos-list"></div>
+</section>
+
+<!-- ===== CHECKLIST ===== -->
+<section id="sec-check" class="section">
+  <div class="sec-header">
+    <div class="sec-title gradient-text">CHECKLIST</div>
+    <div class="sec-sub">Tu flujo de producción paso a paso</div>
+  </div>
+  <div class="check-progress-wrap">
+    <div class="check-progress-label" id="check-label">0 / 10 completados</div>
+    <div class="check-progress-bar-bg">
+      <div class="check-progress-bar" id="check-bar" style="width:0%"></div>
+    </div>
+  </div>
+  <div id="check-list"></div>
+  <button id="reset-check" onclick="resetChecklist()">Reiniciar checklist</button>
+</section>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav">
+  <div class="bn-item active" onclick="switchTab('studio',null,this)">
+    <div class="bn-icon">🎛️</div><div class="bn-label">STUDIO</div>
+  </div>
+  <div class="bn-item" onclick="switchTab('maxmode',null,this)">
+    <div class="bn-icon">⚡</div><div class="bn-label">MAX</div>
+  </div>
+  <div class="bn-item" onclick="switchTab('plays',null,this)">
+    <div class="bn-icon">📼</div><div class="bn-label">PLAYS</div>
+  </div>
+  <div class="bn-item" onclick="switchTab('videos',null,this)">
+    <div class="bn-icon">▶</div><div class="bn-label">VIDEOS</div>
+  </div>
+  <div class="bn-item" onclick="switchTab('check',null,this)">
+    <div class="bn-icon">✓</div><div class="bn-label">CHECK</div>
+  </div>
+</nav>
+
+<!-- FLOATING ASSISTANT -->
+<button id="assist-btn" onclick="toggleAssist()">💬</button>
+<div id="assist-panel">
+  <div class="ap-header">
+    <h3>Studio Assistant</h3>
+    <button class="ap-close" onclick="toggleAssist()">✕</button>
+  </div>
+  <div class="ap-messages" id="ap-messages">
+    <div class="msg bot">Hola 👋 Pregúntame sobre Max Mode, BPM, voces, estructura, TikTok, géneros o stem splitter.</div>
+  </div>
+  <div class="ap-input-row">
+    <input type="text" id="ap-input" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+    <button class="ap-send" onclick="sendMsg()">→</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// TONE.JS — AUDIO
+// ═══════════════════════════════════════════
+let toneReady = false;
+let synth, membraneSynth;
+
+async function initTone(){
+  if(toneReady) return;
+  await Tone.start();
+  synth = new Tone.Synth({
+    oscillator:{type:'triangle'},
+    envelope:{attack:0.01,decay:0.3,sustain:0,release:0.5}
+  }).toDestination();
+  membraneSynth = new Tone.MembraneSynth({
+    pitchDecay:0.05,octaves:4,
+    envelope:{attack:0.001,decay:0.1,sustain:0,release:0.1}
+  }).toDestination();
+  toneReady = true;
+}
+
+const NOTES = ['C4','E4','G4','B4','D5'];
+function playNote(){
+  if(!toneReady) return;
+  try{
+    const n = NOTES[Math.random()*NOTES.length|0];
+    synth.triggerAttackRelease(n,'8n');
+  }catch(e){}
+}
+
+function playBeat(){
+  if(!toneReady) return;
+  try{ membraneSynth.triggerAttackRelease('C2','16n'); }catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// CANVAS BACKGROUND — PARTICLES
+// ═══════════════════════════════════════════
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+const noteChars = ['♩','♪','♫','♬'];
+let particles = [];
+
+function resizeCanvas(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function initParticles(){
+  particles = [];
+  for(let i=0;i<40;i++){
+    particles.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      char: noteChars[Math.random()*4|0],
+      size: 14 + Math.random()*18,
+      speed: 0.2 + Math.random()*0.5,
+      opacity: 0.03 + Math.random()*0.05,
+      drift: (Math.random()-0.5)*0.3
+    });
+  }
+}
+
+function animateParticles(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p=>{
+    ctx.font = `${p.size}px serif`;
+    ctx.fillStyle = `rgba(248,248,255,${p.opacity})`;
+    ctx.fillText(p.char, p.x, p.y);
+    p.y -= p.speed;
+    p.x += p.drift;
+    if(p.y < -30){
+      p.y = canvas.height + 20;
+      p.x = Math.random()*canvas.width;
+      p.char = noteChars[Math.random()*4|0];
+    }
+    if(p.x < -20) p.x = canvas.width+20;
+    if(p.x > canvas.width+20) p.x = -20;
+  });
+  requestAnimationFrame(animateParticles);
+}
+
+window.addEventListener('resize',()=>{ resizeCanvas(); initParticles(); });
+resizeCanvas();
+initParticles();
+animateParticles();
+
+// ═══════════════════════════════════════════
+// AUDIO VISUALIZER BARS
+// ═══════════════════════════════════════════
+const vizContainer = document.getElementById('visualizer');
+const bars = [];
+for(let i=0;i<24;i++){
+  const b = document.createElement('div');
+  b.className = 'viz-bar';
+  b.style.height = '20px';
+  vizContainer.appendChild(b);
+  bars.push(b);
+}
+function animateViz(){
+  const t = Date.now()/500;
+  bars.forEach((b,i)=>{
+    const h = Math.sin(t + i*0.4)*18 + 20;
+    b.style.height = Math.max(4,h) + 'px';
+  });
+  requestAnimationFrame(animateViz);
+}
+animateViz();
+
+// ═══════════════════════════════════════════
+// FLOATING NOTE ON CLICK
+// ═══════════════════════════════════════════
+const noteColors = ['#7c3aed','#06b6d4','#e879f9','#f8f8ff'];
+const noteSymbols = ['♩','♪','♫','♬'];
+
+function spawnNote(x, y){
+  const el = document.createElement('span');
+  el.className = 'float-note';
+  el.textContent = noteSymbols[Math.random()*4|0];
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.color = noteColors[Math.random()*4|0];
+  el.style.fontSize = (16 + Math.random()*12) + 'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 820);
+}
+
+document.addEventListener('click', async e=>{
+  await initTone();
+  const btn = e.target.closest('button,.chip,.lang-chip,.mood-option,.struct-option,.play-card,.bn-item,.tab-pill,.check-item,.vf-chip');
+  if(btn){
+    const r = btn.getBoundingClientRect();
+    spawnNote(r.left + r.width/2, r.top + r.height/2);
+    playNote();
+  }
+});
+
+// ═══════════════════════════════════════════
+// TABS NAVIGATION
+// ═══════════════════════════════════════════
+let currentTab = localStorage.getItem('ssp-tab') || 'studio';
+
+function switchTab(id, pill, bnItem){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.tab-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  if(pill) pill.classList.add('active');
+  else{
+    const pills = document.querySelectorAll('.tab-pill');
+    const map = {studio:0,maxmode:1,plays:2,videos:3,check:4};
+    if(pills[map[id]]) pills[map[id]].classList.add('active');
+  }
+  if(bnItem) bnItem.classList.add('active');
+  else{
+    const bns = document.querySelectorAll('.bn-item');
+    const map = {studio:0,maxmode:1,plays:2,videos:3,check:4};
+    if(bns[map[id]]) bns[map[id]].classList.add('active');
+  }
+  currentTab = id;
+  localStorage.setItem('ssp-tab',id);
+  if(id==='maxmode') startCountUp();
+}
+
+// ═══════════════════════════════════════════
+// FORM STATE
+// ═══════════════════════════════════════════
+const genres = ['trap','reggaeton','pop','techno','indie','metal','jazz','folk','cumbia','salsa','ambient','drill','house','R&B','funk','bossa nova','flamenco','electro','lo-fi','hip hop','psytrance','darkwave'];
+let formState = {
+  genre:'',subgenre:'',mood:'emotional, dark, nostalgic',
+  bpm:120,voice:'masculine expressive',lang:'ES',
+  struct:'[Intro][Verse][Chorus][Verse][Bridge][Chorus][Outro]',
+  instruments:'',theme:'',maxMode:false
+};
+
+function loadForm(){
+  const saved = JSON.parse(localStorage.getItem('ssp-form')||'{}');
+  Object.assign(formState,saved);
+  if(formState.genre) document.getElementById('genre').value = formState.genre;
+  if(formState.subgenre) document.getElementById('subgenre').value = formState.subgenre;
+  if(formState.bpm){ document.getElementById('bpm').value = formState.bpm; updateBpm(document.getElementById('bpm'),true); }
+  if(formState.voice) document.getElementById('voice').value = formState.voice;
+  if(formState.instruments) document.getElementById('instruments').value = formState.instruments;
+  if(formState.theme) document.getElementById('theme').value = formState.theme;
+  if(formState.maxMode){ document.getElementById('max-toggle').checked = true; }
+  // restore mood
+  document.querySelectorAll('.mood-option').forEach(m=>{
+    if(m.dataset.mood===formState.mood) m.classList.add('selected');
+  });
+  // restore lang
+  document.querySelectorAll('.lang-chip').forEach(l=>{
+    l.classList.toggle('active', l.dataset.lang===formState.lang);
+  });
+  // restore struct
+  document.querySelectorAll('.struct-option').forEach(s=>{
+    s.classList.toggle('selected', s.dataset.struct===formState.struct);
+  });
+}
+
+let saveTimer;
+function autoSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    formState.genre = document.getElementById('genre').value;
+    formState.subgenre = document.getElementById('subgenre').value;
+    formState.instruments = document.getElementById('instruments').value;
+    formState.theme = document.getElementById('theme').value;
+    formState.voice = document.getElementById('voice').value;
+    localStorage.setItem('ssp-form', JSON.stringify(formState));
+  }, 500);
+}
+
+['genre','subgenre','instruments','theme','voice'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', autoSave);
+});
+
+// ═══════════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════════
+function showAC(input, listId, items){
+  const list = document.getElementById(listId);
+  const val = input.value.toLowerCase();
+  if(!val){ list.classList.remove('show'); return; }
+  const matches = items.filter(i=>i.toLowerCase().includes(val)).slice(0,5);
+  if(!matches.length){ list.classList.remove('show'); return; }
+  list.innerHTML = matches.map(m=>`<div class="autocomplete-item" onclick="selectAC('${input.id}','${listId}','${m}')">${m}</div>`).join('');
+  list.classList.add('show');
+}
+function selectAC(inputId, listId, val){
+  document.getElementById(inputId).value = val;
+  document.getElementById(listId).classList.remove('show');
+  if(inputId==='genre') formState.genre = val;
+  autoSave();
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.autocomplete-wrap')) document.querySelectorAll('.autocomplete-list').forEach(l=>l.classList.remove('show'));
+});
+
+// ═══════════════════════════════════════════
+// MOOD / LANG / STRUCT SELECTORS
+// ═══════════════════════════════════════════
+function selMood(el){
+  document.querySelectorAll('.mood-option').forEach(m=>m.classList.remove('selected'));
+  el.classList.add('selected');
+  formState.mood = el.dataset.mood;
+  autoSave();
+}
+function selLang(el){
+  document.querySelectorAll('.lang-chip').forEach(l=>l.classList.remove('active'));
+  el.classList.add('active');
+  formState.lang = el.dataset.lang;
+  autoSave();
+}
+function selStruct(el){
+  document.querySelectorAll('.struct-option').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  formState.struct = el.dataset.struct;
+  autoSave();
+}
+
+// ═══════════════════════════════════════════
+// BPM
+// ═══════════════════════════════════════════
+function updateBpm(el, silent){
+  const v = parseInt(el.value);
+  formState.bpm = v;
+  document.getElementById('bpm-val').textContent = v;
+  const speeds = [[60,80,'Muy lento'],[81,100,'Lento'],[101,130,'Medio'],[131,160,'Rápido'],[161,200,'Muy rápido']];
+  for(const [min,max,label] of speeds){
+    if(v>=min && v<=max){ document.getElementById('bpm-speed').textContent = label; break; }
+  }
+  if(!silent){ autoSave(); playBeat(); }
+}
+
+// ═══════════════════════════════════════════
+// IDEA BUILDER
+// ═══════════════════════════════════════════
+function setIdea(el){
+  document.getElementById('idea-input').value = el.textContent;
+}
+
+const moodKeywords = {
+  'oscur|triste|melanc|nocturn|sombr':['emotional, dark, nostalgic','Dark & Nostálgico'],
+  'agresiv|trap|fuerz|potent|energi':['energetic, hype, aggressive','Energético'],
+  'amor|romant|sensual|suave|cariño':['romantic, smooth, sensual','Romántico'],
+  'nostalgico|recuerdo|melanc|cinematic':['melancholic, introspective, cinematic','Melancólico'],
+  'feliz|alegr|euforic|buen|ánimo':['happy, uplifting, euphoric','Feliz'],
+  'mister|etere|sueño|dream|ambient':['mysterious, ethereal, dreamy','Misterioso'],
+  'callejero|calle|raw|gritty|street':['raw, gritty, streetwise','Callejero'],
+  'epic|triunf|orquest|gran|héroe':['epic, triumphant, orchestral','Épico']
+};
+
+function buildFromIdea(){
+  const text = document.getElementById('idea-input').value.toLowerCase();
+  if(!text.trim()) return;
+  // Detect mood
+  let detectedMood = 'emotional, dark, nostalgic';
+  for(const [pattern, vals] of Object.entries(moodKeywords)){
+    const rx = new RegExp(pattern,'i');
+    if(rx.test(text)){ detectedMood = vals[0]; break; }
+  }
+  // Detect genre
+  const genreMap = {trap:'trap',reggaeton:'reggaeton',pop:'pop',folk:'folk',jazz:'jazz',metal:'metal',techno:'techno',tiktok:'pop viral',balada:'ballad'};
+  let detectedGenre = '';
+  for(const [kw,g] of Object.entries(genreMap)){
+    if(text.includes(kw)){ detectedGenre = g; break; }
+  }
+  // Detect BPM
+  let bpm = 120;
+  if(/lento|suave|slow|calm/.test(text)) bpm = 80;
+  else if(/rápido|agresiv|energi|hype|fast/.test(text)) bpm = 150;
+  // Apply
+  if(detectedGenre){ document.getElementById('genre').value = detectedGenre; formState.genre = detectedGenre; }
+  formState.mood = detectedMood;
+  formState.bpm = bpm;
+  document.getElementById('bpm').value = bpm;
+  updateBpm(document.getElementById('bpm'),true);
+  document.querySelectorAll('.mood-option').forEach(m=>{
+    m.classList.toggle('selected', m.dataset.mood === detectedMood);
+  });
+  autoSave();
+  // Jump to generate
+  generatePrompt();
+}
+
+// ═══════════════════════════════════════════
+// GENERATE PROMPT
+// ═══════════════════════════════════════════
+let lastGeneratedPrompt = '';
+
+function generatePrompt(){
+  const genre = document.getElementById('genre').value || 'pop';
+  const subgenre = document.getElementById('subgenre').value;
+  const voice = document.getElementById('voice').value;
+  const instruments = document.getElementById('instruments').value;
+  const theme = document.getElementById('theme').value;
+  const maxOn = document.getElementById('max-toggle').checked;
+
+  const btn = document.getElementById('gen-btn');
+  btn.classList.add('loading');
+  btn.querySelector('span').textContent = '⏳ Generando...';
+
+  setTimeout(()=>{
+    let prompt = `${genre}${subgenre ? ', '+subgenre : ''}`;
+    prompt += `, ${formState.mood}`;
+    prompt += `\nBPM: ${formState.bpm}, ${bpmDescription(formState.bpm)}`;
+    prompt += `\nVoice: ${voice}`;
+    prompt += `\nLanguage: ${formState.lang}`;
+    prompt += `\nStructure: ${formState.struct}`;
+    if(instruments) prompt += `\nInstruments: ${instruments}`;
+    if(theme) prompt += `\nTheme: ${theme}`;
+    if(maxOn) prompt += `\n\nis mode max\nquality max max\nrealins max max\nreal instrument max max`;
+
+    lastGeneratedPrompt = prompt;
+    document.getElementById('result-text').textContent = prompt;
+    document.getElementById('max-result').style.display = maxOn ? 'block' : 'none';
+    document.getElementById('result-area').style.display = 'block';
+
+    btn.classList.remove('loading');
+    btn.querySelector('span').textContent = '✦ GENERAR PROMPT';
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }, 700);
+}
+
+function bpmDescription(bpm){
+  if(bpm<=80) return 'slow, deliberate pace';
+  if(bpm<=100) return 'moderate pace';
+  if(bpm<=130) return 'medium-fast rhythm';
+  if(bpm<=160) return 'fast-paced';
+  return 'very fast, high energy';
+}
+
+function addInstr(el){
+  const inp = document.getElementById('instruments');
+  const current = inp.value.trim();
+  const val = el.textContent;
+  inp.value = current ? current + ', ' + val : val;
+  formState.instruments = inp.value;
+  autoSave();
+}
+
+// ═══════════════════════════════════════════
+// COPY HELPERS
+// ═══════════════════════════════════════════
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>{
+    // feedback handled by note spawn
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  });
+}
+
+function copyResult(){
+  copyText(lastGeneratedPrompt);
+}
+
+// ═══════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════
+function saveToHistory(){
+  if(!lastGeneratedPrompt) return;
+  let hist = JSON.parse(localStorage.getItem('ssp-history')||'[]');
+  hist.unshift({text: lastGeneratedPrompt, timestamp: new Date().toLocaleString('es'), id: Date.now()});
+  hist = hist.slice(0,5);
+  localStorage.setItem('ssp-history', JSON.stringify(hist));
+  renderHistory();
+}
+
+function renderHistory(){
+  const hist = JSON.parse(localStorage.getItem('ssp-history')||'[]');
+  const container = document.getElementById('history-list');
+  if(!hist.length){ container.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,0.25);font-family:\'JetBrains Mono\',monospace">Sin historial aún</div>'; return; }
+  container.innerHTML = hist.map(h=>`
+    <div class="hist-item">
+      <div class="hist-preview">${h.text.substring(0,45)}...</div>
+      <div class="hist-ts">${h.timestamp}</div>
+      <div class="hist-actions">
+        <button class="hist-btn restore" onclick="restoreHist(${h.id})">↩</button>
+        <button class="hist-btn del" onclick="delHist(${h.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function restoreHist(id){
+  const hist = JSON.parse(localStorage.getItem('ssp-history')||'[]');
+  const item = hist.find(h=>h.id===id);
+  if(!item) return;
+  lastGeneratedPrompt = item.text;
+  document.getElementById('result-text').textContent = item.text;
+  document.getElementById('result-area').style.display = 'block';
+  document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function delHist(id){
+  let hist = JSON.parse(localStorage.getItem('ssp-history')||'[]');
+  hist = hist.filter(h=>h.id!==id);
+  localStorage.setItem('ssp-history', JSON.stringify(hist));
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════
+// MAX MODE TOGGLE
+// ═══════════════════════════════════════════
+let globalMaxMode = false;
+
+function toggleMaxMode(btn){
+  globalMaxMode = !globalMaxMode;
+  btn.classList.toggle('active', globalMaxMode);
+  btn.textContent = globalMaxMode ? '⚡ MAX ON' : '⚡ MAX MODE';
+  document.getElementById('max-toggle').checked = globalMaxMode;
+  formState.maxMode = globalMaxMode;
+  autoSave();
+}
+
+function toggleMaxCard(inp){
+  formState.maxMode = inp.checked;
+  globalMaxMode = inp.checked;
+  const topBtn = document.getElementById('max-btn');
+  topBtn.classList.toggle('active', inp.checked);
+  topBtn.textContent = inp.checked ? '⚡ MAX ON' : '⚡ MAX MODE';
+  autoSave();
+}
+
+// ═══════════════════════════════════════════
+// PLAYS
+// ═══════════════════════════════════════════
+function togglePlay(card){
+  const content = card.querySelector('.play-content');
+  content.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════
+// VIDEOS DATA
+// ═══════════════════════════════════════════
+const VIDEOS = [
+  {id:1,title:'Prompts Correctos vs Largos',url:'https://www.youtube.com/watch?v=wawkrWw2In8&t=28s',tags:['base'],
+   ts:[{t:'0:00',s:0,d:'El problema real'},{t:'0:28',s:28,d:'GPT Narmia',star:true},{t:'1:27',s:87,d:'Modo 1 balada',star:true},{t:'4:36',s:276,d:'Random Mode'},{t:'8:50',s:530,d:'Studio Mode',star:true},{t:'11:54',s:714,d:'Modo Travieso',star:true},{t:'14:28',s:868,d:'GPT gratis'}]},
+  {id:2,title:'Max Mode — Testeo Completo',url:'https://www.youtube.com/watch?v=XfFG27IkjIM',tags:['maxmode'],
+   ts:[{t:'0:00',s:0,d:'Descubrimiento'},{t:'1:25',s:85,d:'Testeo',star:true},{t:'4:45',s:285,d:'Test Trap +66%',star:true},{t:'5:28',s:328,d:'Test Pop'},{t:'6:34',s:394,d:'Test Techno +75%',star:true},{t:'7:39',s:459,d:'Historia Max Mode'},{t:'8:33',s:513,d:'Cómo activar',star:true},{t:'11:07',s:667,d:'Max Mode en Lyrics',star:true},{t:'14:41',s:881,d:'Duetos bonus'}]},
+  {id:3,title:'Studio Mode — Instrumentos Solistas',url:'https://www.youtube.com/watch?v=r60dTNcZntE',tags:['tecnica'],
+   ts:[{t:'0:00',s:0,d:'Intro'},{t:'2:30',s:150,d:'Flauta árabe demo',star:true},{t:'5:40',s:340,d:'Guitarra flamenca'},{t:'8:20',s:500,d:'Soprano sin lyrics',star:true},{t:'10:45',s:645,d:'Stem splitter',star:true}]},
+  {id:4,title:'Modo Travieso — Calidad Máxima',url:'https://www.youtube.com/watch?v=6WIFH6GMabA',tags:['maxmode','tecnica'],
+   ts:[{t:'0:00',s:0,d:'Qué es'},{t:'1:30',s:90,d:'Demo sin modo'},{t:'3:45',s:225,d:'Demo CON modo',star:true},{t:'6:00',s:360,d:'Comparación mezcla',star:true},{t:'8:20',s:500,d:'Cuándo usar'}]},
+  {id:5,title:'Estructura de Canciones Virales',url:'https://www.youtube.com/watch?v=icQDqvlIj-A',tags:['viral','base'],
+   ts:[{t:'0:00',s:0,d:'Anatomía hit viral'},{t:'2:00',s:120,d:'TikTok 7 segundos',star:true},{t:'5:30',s:330,d:'Estructura Radio'},{t:'8:00',s:480,d:'EDM drop',star:true},{t:'11:00',s:660,d:'Aplicando en Suno'}]},
+  {id:6,title:'Voces y Duetos Avanzados',url:'https://www.youtube.com/watch?v=DIToC1PVXJE',tags:['tecnica','maxmode'],
+   ts:[{t:'0:00',s:0,d:'Control voces'},{t:'2:30',s:150,d:'Vocal Max Mode sintaxis',star:true},{t:'5:00',s:300,d:'start on through',star:true},{t:'7:30',s:450,d:'Dueto hombre/mujer',star:true},{t:'10:00',s:600,d:'Géneros'}]},
+  {id:7,title:'Géneros Experimentales',url:'https://www.youtube.com/watch?v=f2msbSVOO1U',tags:['base','viral'],
+   ts:[{t:'0:00',s:0,d:'Por qué funcionan'},{t:'2:00',s:120,d:'New Yas Break Beat',star:true},{t:'5:00',s:300,d:'Epic Nordic Folk Metal',star:true},{t:'8:15',s:495,d:'Glitchy Hyper Bob Trap'},{t:'11:00',s:660,d:'Géneros propios',star:true}]},
+  {id:8,title:'Mezcla y Stem Splitting',url:'https://www.youtube.com/watch?v=-MMYt8zi9e0',tags:['tecnica'],
+   ts:[{t:'0:00',s:0,d:'Limitaciones'},{t:'3:00',s:180,d:'Stem splitter uso',star:true},{t:'7:00',s:420,d:'Separar voz'},{t:'11:00',s:660,d:'Integrar DAW',star:true},{t:'16:00',s:960,d:'Flujo completo',star:true}]},
+  {id:9,title:'TikTok — Hook en 7 Segundos',url:'https://www.youtube.com/watch?v=R3yMFYua2wg',tags:['viral'],
+   ts:[{t:'0:00',s:0,d:'Psicología scroll'},{t:'2:00',s:120,d:'Hook perfecto',star:true},{t:'4:30',s:270,d:'Prompt TikTok',star:true},{t:'7:00',s:420,d:'3 estilos hook'},{t:'9:00',s:540,d:'Loop 15 segundos',star:true}]},
+  {id:10,title:'Identidad Artística con IA',url:'https://www.youtube.com/watch?v=XjmaO4ixy5Y',tags:['base'],
+   ts:[{t:'0:00',s:0,d:'IA con identidad'},{t:'3:00',s:180,d:'Firma sonora',star:true},{t:'7:00',s:420,d:'Consistencia'},{t:'11:00',s:660,d:'Variación en identidad',star:true},{t:'15:00',s:900,d:'Caso real'}]},
+  {id:11,title:'Flujo Completo de Producción',url:'https://www.youtube.com/watch?v=3nL2aWNXJQw&t=815s',tags:['base','tecnica'],
+   ts:[{t:'0:00',s:0,d:'Overview'},{t:'3:00',s:180,d:'Fase 1 idea'},{t:'7:00',s:420,d:'Fase 2 prompt',star:true},{t:'13:35',s:815,d:'PUNTO CLAVE flujo real',star:true,double:true},{t:'18:00',s:1080,d:'Selección'},{t:'22:00',s:1320,d:'Publicación'}]},
+  {id:12,title:'Vocal Max Mode en Detalle',url:'https://www.youtube.com/watch?v=lZQ9gF-f9E0',tags:['maxmode','tecnica'],
+   ts:[{t:'0:00',s:0,d:'Diferencia vocal'},{t:'2:30',s:150,d:'Sintaxis exacta',star:true},{t:'5:00',s:300,d:'Demo Techno vs vocal max'},{t:'8:00',s:480,d:'start on through',star:true},{t:'11:00',s:660,d:'Géneros que mejoran'}]},
+  {id:13,title:'Random Mode e Inspiración',url:'https://www.youtube.com/watch?v=zVzsVOoIfLY&t=1s',tags:['base','viral'],
+   ts:[{t:'0:01',s:1,d:'Para qué sirve'},{t:'2:00',s:120,d:'New Yas Break Beat',star:true},{t:'5:00',s:300,d:'Nordic Folk Metal'},{t:'7:15',s:435,d:'Glitchy Hyper Bob',star:true},{t:'10:00',s:600,d:'Sorpresa → identidad',star:true}]}
+];
+
+function buildVideoUrl(baseUrl, seconds){
+  const u = new URL(baseUrl);
+  u.searchParams.set('t', seconds+'s');
+  return u.toString();
+}
+
+let activeFilter = 'all';
+
+function renderVideos(filter){
+  const list = document.getElementById('videos-list');
+  const filtered = filter==='all' ? VIDEOS : VIDEOS.filter(v=>v.tags.includes(filter));
+  list.innerHTML = filtered.map(v=>`
+    <div class="video-card" data-tags="${v.tags.join(',')}">
+      <div class="video-header" onclick="toggleVideo(this)">
+        <div class="video-num">V${String(v.id).padStart(2,'0')}</div>
+        <div class="video-info">
+          <div class="video-title">${v.title}</div>
+          <div class="video-url">${v.url.replace('https://','')}</div>
+        </div>
+        <div class="video-toggle">▶</div>
+      </div>
+      <div class="video-body">
+        <div class="ts-list">
+          ${v.ts.map(ts=>`
+            <div class="ts-item">
+              <a class="ts-time" href="${buildVideoUrl(v.url,ts.s)}" target="_blank" rel="noopener">${ts.t}</a>
+              <div class="ts-desc">${ts.d}${ts.star?'<span class="ts-star">'+(ts.double?'⭐⭐':'⭐')+'</span>':''}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:12px">
+          <a href="${v.url}" target="_blank" rel="noopener" style="font-size:11px;color:var(--violet);font-family:'JetBrains Mono',monospace;text-decoration:none">▶ Ver en YouTube →</a>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleVideo(header){
+  const body = header.nextElementSibling;
+  const tog = header.querySelector('.video-toggle');
+  body.classList.toggle('open');
+  tog.classList.toggle('open');
+}
+
+function filterVids(filter, chip){
+  activeFilter = filter;
+  document.querySelectorAll('.vf-chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  renderVideos(filter);
+}
+
+// ═══════════════════════════════════════════
+// CHECKLIST
+// ═══════════════════════════════════════════
+const CHECKS = [
+  'Definir género principal',
+  'Definir mood / emoción',
+  'Establecer BPM',
+  'Elegir tipo de voz',
+  'Definir estructura',
+  'Crear hook potente',
+  'Activar Max Mode en Style',
+  'Revisar 2 versiones generadas',
+  'Usar stem splitter si necesario',
+  'Validar mezcla final'
+];
+
+function renderChecklist(){
+  const saved = JSON.parse(localStorage.getItem('ssp-checklist')||'{}');
+  const list = document.getElementById('check-list');
+  list.innerHTML = CHECKS.map((c,i)=>`
+    <div class="check-item ${saved[i]?'done':''}" onclick="toggleCheck(${i},this)">
+      <div class="check-circle"><span class="check-tick">✓</span></div>
+      <div class="check-text">${c}</div>
+      <div class="check-num">${String(i+1).padStart(2,'0')}</div>
+    </div>
+  `).join('');
+  updateProgress();
+}
+
+function toggleCheck(idx, el){
+  el.classList.toggle('done');
+  const saved = JSON.parse(localStorage.getItem('ssp-checklist')||'{}');
+  saved[idx] = el.classList.contains('done');
+  localStorage.setItem('ssp-checklist', JSON.stringify(saved));
+  updateProgress();
+}
+
+function updateProgress(){
+  const saved = JSON.parse(localStorage.getItem('ssp-checklist')||'{}');
+  const done = Object.values(saved).filter(Boolean).length;
+  document.getElementById('check-label').textContent = `${done} / ${CHECKS.length} completados`;
+  document.getElementById('check-bar').style.width = (done/CHECKS.length*100)+'%';
+}
+
+function resetChecklist(){
+  localStorage.removeItem('ssp-checklist');
+  renderChecklist();
+}
+
+// ═══════════════════════════════════════════
+// COUNT UP (MAX MODE STATS)
+// ═══════════════════════════════════════════
+let countUpDone = false;
+function startCountUp(){
+  if(countUpDone) return;
+  countUpDone = true;
+  document.querySelectorAll('.stat-num').forEach(el=>{
+    const target = parseInt(el.dataset.target);
+    let current = 0;
+    const step = target/40;
+    const timer = setInterval(()=>{
+      current = Math.min(current+step, target);
+      el.textContent = '+' + Math.round(current) + '%';
+      if(current>=target) clearInterval(timer);
+    }, 30);
+  });
+}
+
+// ═══════════════════════════════════════════
+// FLOATING ASSISTANT
+// ═══════════════════════════════════════════
+const KB = {
+  'max mode|calidad|quality|códigos': `⚡ MAX MODE — 4 códigos para el campo Style:\n\nis mode max\nquality max max\nrealins max max\nreal instrument max max\n\nMejora: +66% trap, +75% techno, +55% rock, +40% pop`,
+  'bpm|tempo|velocidad|ritmo': `🥁 BPM por género:\n• Lo-fi: 70-85\n• Reggaeton: 85-95\n• R&B: 90-100\n• Trap: 130-145\n• House: 120-130\n• Techno: 130-145\n• Drum&Bass: 160-180`,
+  'vocal|voz|cantar|pronunciación': `🎤 VOCAL MAX MODE:\n///\n*****\n///\nstart on through "[primera frase]"\n\nElimina silencios iniciales y mejora pronunciación notablemente.`,
+  'tiktok|viral|hook|7 segundo': `📱 FÓRMULA TIKTOK:\n• Primer sonido impactante\n• Voz entra en 0-2s (sin intro)\n• Hook de 7 segundos\n• Loop perfecto de 15s\nUsar: "hook-first, no intro, start on through"`,
+  'estructura|verso|coro|bridge|intro|outro': `🏗️ ESTRUCTURAS:\n• Completa: Intro→Verso→Coro→Bridge→Outro\n• TikTok: Hook→Verso→Hook\n• EDM: Build→Drop→Break→Build→Drop\n• Radio: Intro→Verso→Coro×2→Outro`,
+  'stem|separar|mezcla|daw|splitter': `🎚️ STEM SPLITTER:\n1. Genera en Suno con quality max max\n2. Usa moises.ai o lalal.ai\n3. Separa voz, batería, bass, melodía\n4. Importa stems a tu DAW\nVideo 8 cubre esto en detalle.`,
+  'género|genero|estilo|experimental': `🎵 GÉNEROS QUE FUNCIONAN BIEN:\n• New Yas Break Beat (muy específico)\n• Epic Nordic Folk Metal\n• Glitchy Hyper Bob Trap\n• Géneros inventados descriptivos\nMás específico = mejor resultado en Suno`,
+  'prompt|como|cómo|escribir|crear': `✦ GUÍA DE PROMPT:\n1. Género + subgénero específico\n2. Mood con adjetivos (emotional, dark...)\n3. BPM exacto\n4. Tipo de voz\n5. Estructura entre [corchetes]\n6. Añadir Max Mode al final\nEvitar prompts genéricos o muy largos.`,
+  'dueto|duet|voces|hombre|mujer': `👥 DUET MODE:\nduet start on through\nmail start on "[frase hombre]"\nfemale start on "[frase mujer]"\n\nCombinar con quality max max para mejor resultado.`,
+  'random|inspiración|idea|bloqueo': `🎲 RANDOM MODE:\nCuando tienes bloqueo creativo:\n1. Escribe un género inventado muy específico\n2. Deja que Suno sorprenda\n3. Usa el resultado como punto de partida\nEjemplo: "Epic Nordic Cumbia Metal Dark"\nVer Video 13.`
+};
+
+function toggleAssist(){
+  document.getElementById('assist-panel').classList.toggle('open');
+}
+
+function sendMsg(){
+  const inp = document.getElementById('ap-input');
+  const q = inp.value.trim();
+  if(!q) return;
+  addMsg(q,'user');
+  inp.value = '';
+  // Find answer
+  let answer = 'Intenta preguntar sobre: Max Mode, BPM, voces, estructura, TikTok, géneros, stem splitter o prompts.';
+  const qLow = q.toLowerCase();
+  for(const [pattern, resp] of Object.entries(KB)){
+    const rx = new RegExp(pattern.split('|').join('|'),'i');
+    if(rx.test(qLow)){ answer = resp; break; }
+  }
+  setTimeout(()=>addMsg(answer,'bot'), 300);
+  // Save to localStorage
+  let chat = JSON.parse(localStorage.getItem('ssp-chat')||'[]');
+  chat.unshift({q,a:answer,ts:Date.now()});
+  chat = chat.slice(0,5);
+  localStorage.setItem('ssp-chat', JSON.stringify(chat));
+}
+
+function addMsg(text, type){
+  const msgs = document.getElementById('ap-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${type}`;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  renderVideos('all');
+  renderChecklist();
+  renderHistory();
+  loadForm();
+  // Restore tab
+  const savedTab = localStorage.getItem('ssp-tab');
+  if(savedTab && savedTab!=='studio'){
+    const tabMap = {studio:0,maxmode:1,plays:2,videos:3,check:4};
+    const pills = document.querySelectorAll('.tab-pill');
+    const bns = document.querySelectorAll('.bn-item');
+    if(pills[tabMap[savedTab]]) switchTab(savedTab, pills[tabMap[savedTab]], bns[tabMap[savedTab]]);
+  }
+  // Restore chat history
+  const chat = JSON.parse(localStorage.getItem('ssp-chat')||'[]');
+  if(chat.length){
+    chat.reverse().forEach(item=>{
+      addMsg(item.q,'user');
+      addMsg(item.a,'bot');
+    });
+  }
+});
+</script>
+</body>
+</html>
