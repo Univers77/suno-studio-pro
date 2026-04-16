@@ -48,7 +48,7 @@ body::after{content:'';position:fixed;inset:0;z-index:2;pointer-events:none;back
 .tab-pill{font-family:var(--fh);font-size:.72rem;font-weight:700;padding:8px 18px;border-radius:20px;cursor:none;border:1px solid transparent;transition:all .3s;white-space:nowrap;color:var(--dim);background:transparent;letter-spacing:.06em;position:relative;overflow:hidden}
 .tab-pill:hover{color:var(--g);border-color:rgba(0,255,136,.2)}.tab-pill.active{color:var(--g);background:rgba(0,255,136,.06);border-color:rgba(0,255,136,.3);box-shadow:0 0 20px rgba(0,255,136,.08)}
 #main{margin-top:calc(var(--nav-h) + var(--tab-h));padding:1.5rem 1rem;max-width:960px;margin-left:auto;margin-right:auto;position:relative;z-index:10}
-.section{display:none;opacity:0}.section.active{display:block}
+.section{display:none;opacity:0}.section.active{display:block;opacity:1}
 .card{background:var(--surf);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);transform-style:preserve-3d;transform:perspective(1000px);transition:border-color .4s,box-shadow .4s;will-change:transform}
 .card::before{content:'';position:absolute;top:-1px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,136,.5) 40%,rgba(0,255,255,.3) 60%,transparent)}
 .card::after{content:'';position:absolute;inset:0;background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(0,255,136,.04),transparent 40%);pointer-events:none}
@@ -158,7 +158,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 @keyframes noteFloat{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-70px) scale(1.3)}}
 .ripple{position:absolute;border-radius:50%;background:rgba(0,255,136,.25);pointer-events:none;transform:scale(0);width:60px;height:60px;margin:-30px 0 0 -30px}
 #max-btn{font-family:var(--fh);font-weight:700;font-size:.68rem;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.3);color:var(--g);padding:8px 16px;border-radius:8px;cursor:none;transition:all .3s;letter-spacing:.08em}
-#max-btn:hover{background:rgba(0,255,136,.15)}.#max-btn.active{background:rgba(255,68,68,.15);border-color:rgba(255,68,68,.5);color:#f87171}
+#max-btn:hover{background:rgba(0,255,136,.15)}#max-btn.active{background:rgba(255,68,68,.15);border-color:rgba(255,68,68,.5);color:#f87171}
 .exp-item{padding:10px 14px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:8px}.exp-name{font-weight:700;font-size:.88rem;margin-bottom:2px}.exp-sub{font-size:.68rem;color:var(--dim);font-family:var(--fj)}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,255,136,.3);border-radius:2px}
 </style>
@@ -498,7 +498,7 @@ function loadForm(){const s=JSON.parse(localStorage.getItem('ssp-form')||'{}');O
 let saveTimer;
 function autoSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{formState.genre=document.getElementById('genre').value;formState.subgenre=document.getElementById('subgenre').value;formState.instruments=document.getElementById('instruments').value;formState.theme=document.getElementById('theme').value;formState.voice=document.getElementById('voice').value;localStorage.setItem('ssp-form',JSON.stringify(formState));},500);}
 ['genre','subgenre','instruments','theme','voice'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',autoSave);});
-function showAC(input,listId,items){const list=document.getElementById(listId),val=input.value.toLowerCase();if(!val){list.classList.remove('show');return;}const m=items.filter(i=>i.toLowerCase().includes(val)).slice(0,5);if(!m.length){list.classList.remove('show');return;}list.innerHTML=m.map(x=>'<div class="autocomplete-item" onclick="selectAC(''+input.id+'',''+listId+'',''+x+'')">'+x+'</div>').join('');list.classList.add('show');}
+function showAC(input,listId,items){const list=document.getElementById(listId),val=input.value.toLowerCase();if(!val){list.classList.remove('show');return;}const m=items.filter(i=>i.toLowerCase().includes(val)).slice(0,5);if(!m.length){list.classList.remove('show');return;}list.innerHTML=m.map(x=>'<div class="autocomplete-item" onclick="selectAC(\''+input.id+'\',\''+listId+'\',\''+x+'\')">'+ x+'</div>').join('');list.classList.add('show');}
 function selectAC(inputId,listId,val){document.getElementById(inputId).value=val;document.getElementById(listId).classList.remove('show');if(inputId==='genre')formState.genre=val;autoSave();}
 document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete-wrap'))document.querySelectorAll('.autocomplete-list').forEach(l=>l.classList.remove('show'));});
 function selMood(el){document.querySelectorAll('.mood-option').forEach(m=>m.classList.remove('selected'));el.classList.add('selected');formState.mood=el.dataset.mood;autoSave();}
@@ -514,18 +514,7 @@ function generatePrompt(){
   const btn=document.getElementById('gen-btn');btn.querySelector('span').textContent='⏳ Generando...';
   gsap.fromTo(btn,{scale:.97},{scale:1,duration:.3,ease:'elastic.out(1.2,.5)'});spendTokens(50);
   setTimeout(()=>{
-    let p=genre+(subgenre?', '+subgenre:'');p+=', '+formState.mood;p+='
-BPM: '+formState.bpm+', '+bpmDesc(formState.bpm);p+='
-Voice: '+voice;p+='
-Language: '+formState.lang;p+='
-Structure: '+formState.struct;if(instruments)p+='
-Instruments: '+instruments;if(theme)p+='
-Theme: '+theme;if(maxOn)p+='
-
-is mode max
-quality max max
-realins max max
-real instrument max max';
+    let p=genre+(subgenre?', '+subgenre:'');p+=', '+formState.mood;p+='\nBPM: '+formState.bpm+', '+bpmDesc(formState.bpm);p+='\nVoice: '+voice;p+='\nLanguage: '+formState.lang;p+='\nStructure: '+formState.struct;if(instruments)p+='\nInstruments: '+instruments;if(theme)p+='\nTheme: '+theme;if(maxOn)p+='\n\nis mode max\nquality max max\nrealins max max\nreal instrument max max';
     lastPrompt=p;document.getElementById('result-text').textContent=p;document.getElementById('max-result').style.display=maxOn?'block':'none';
     const ra=document.getElementById('result-area');ra.style.display='block';gsap.fromTo(ra,{opacity:0,y:10},{opacity:1,y:0,duration:.4});
     btn.querySelector('span').textContent='✦ GENERAR PROMPT';ra.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -570,42 +559,7 @@ function updateProgress(){const s=JSON.parse(localStorage.getItem('ssp-checklist
 function resetChecklist(){localStorage.removeItem('ssp-checklist');renderChecklist();}
 let countUpDone=false;
 function startCountUp(){if(countUpDone)return;countUpDone=true;document.querySelectorAll('.stat-num').forEach(el=>{const target=parseInt(el.dataset.target),obj={val:0};gsap.to(obj,{val:target,duration:1.5,ease:'power2.out',onUpdate:()=>el.textContent='+'+Math.round(obj.val)+'%'});});}
-const KB={'max mode|calidad|quality':'⚡ MAX MODE — 4 códigos para Style:
-
-is mode max
-quality max max
-realins max max
-real instrument max max
-
-+66% trap, +75% techno, +55% rock','bpm|tempo|velocidad':'🥁 BPM:
-• Lo-fi: 70-85
-• Reggaeton: 85-95
-• Trap: 130-145
-• House: 120-130
-• Techno: 130-145','vocal|voz|pronunciaci':'🎤 VOCAL MAX MODE:
-///
-*****
-///
-start on through "[primera frase]"','tiktok|viral|hook':'📱 TIKTOK:
-• Voz en 0-2s (sin intro)
-• Hook de 7 segundos
-• Loop de 15s
-Usar: hook-first, no intro, start on through','estructura|verso|coro':'🏗️ ESTRUCTURAS:
-• Completa: Intro→Verso→Coro→Bridge→Outro
-• TikTok: Hook→Verso→Hook
-• EDM: Build→Drop→Break→Drop','stem|separar|daw':'🎚️ STEM SPLITTER:
-1. quality max max en Suno
-2. moises.ai o lalal.ai
-3. Separa stems → importa a DAW','dueto|duet|voces':'👥 DUET MODE:
-duet start on through
-mail start on "[frase hombre]"
-female start on "[frase mujer]"','prompt|como|escribir':'✦ PROMPT:
-1. Género + subgénero
-2. Mood descriptivo
-3. BPM exacto
-4. Tipo de voz
-5. Estructura [corchetes]
-6. Max Mode al final'};
+const KB={'max mode|calidad|quality':'⚡ MAX MODE — 4 códigos para Style:\n\nis mode max\nquality max max\nrealins max max\nreal instrument max max\n\n+66% trap, +75% techno, +55% rock','bpm|tempo|velocidad':'🥁 BPM:\n• Lo-fi: 70-85\n• Reggaeton: 85-95\n• Trap: 130-145\n• House: 120-130\n• Techno: 130-145','vocal|voz|pronunciaci':'🎤 VOCAL MAX MODE:\n///\n*****\n///\nstart on through "[primera frase]"','tiktok|viral|hook':'📱 TIKTOK:\n• Voz en 0-2s (sin intro)\n• Hook de 7 segundos\n• Loop de 15s\nUsar: hook-first, no intro, start on through','estructura|verso|coro':'🏗️ ESTRUCTURAS:\n• Completa: Intro→Verso→Coro→Bridge→Outro\n• TikTok: Hook→Verso→Hook\n• EDM: Build→Drop→Break→Drop','stem|separar|daw':'🎚️ STEM SPLITTER:\n1. quality max max en Suno\n2. moises.ai o lalal.ai\n3. Separa stems → importa a DAW','dueto|duet|voces':'👥 DUET MODE:\nduet start on through\nmail start on "[frase hombre]"\nfemale start on "[frase mujer]"','prompt|como|escribir':'✦ PROMPT:\n1. Género + subgénero\n2. Mood descriptivo\n3. BPM exacto\n4. Tipo de voz\n5. Estructura [corchetes]\n6. Max Mode al final'};
 function toggleAssist(){document.getElementById('assist-panel').classList.toggle('open');}
 function sendMsg(){const inp=document.getElementById('ap-input'),q=inp.value.trim();if(!q)return;addMsg(q,'user');inp.value='';let ans='Pregunta sobre: Max Mode, BPM, voces, estructura, TikTok, géneros o stem splitter.';const qL=q.toLowerCase();for(const [p,r] of Object.entries(KB)){if(new RegExp(p,'i').test(qL)){ans=r;break;}}setTimeout(()=>addMsg(ans,'bot'),300);let chat=JSON.parse(localStorage.getItem('ssp-chat')||'[]');chat.unshift({q,a:ans,ts:Date.now()});chat=chat.slice(0,5);localStorage.setItem('ssp-chat',JSON.stringify(chat));}
 function addMsg(text,type){const m=document.getElementById('ap-messages'),d=document.createElement('div');d.className='msg '+type;d.textContent=text;m.appendChild(d);m.scrollTop=m.scrollHeight;}
