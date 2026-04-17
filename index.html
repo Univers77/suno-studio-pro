@@ -423,20 +423,20 @@ updateTokenUI(0);
 
 // BG AURORA
 const bgC=document.getElementById('bg-canvas'),bgX=bgC.getContext('2d');
-function resizeBg(){bgC.width=window.innerWidth;bgC.height=window.innerHeight;}resizeBg();
+function resizeBg(){bgC.width=window.innerWidth||screen.width||1920;bgC.height=window.innerHeight||screen.height||1080;}resizeBg();
 const ORBS=[{x:.15,y:.25,r:.38,spd:.00018,off:0,c1:'rgba(0,255,136,.12)',c2:'rgba(0,255,136,0)'},{x:.75,y:.55,r:.32,spd:.00014,off:2,c1:'rgba(255,0,255,.09)',c2:'rgba(255,0,255,0)'},{x:.45,y:.75,r:.28,spd:.00022,off:4,c1:'rgba(0,255,255,.08)',c2:'rgba(0,255,255,0)'}];
-function drawBg(){bgX.clearRect(0,0,bgC.width,bgC.height);const T=Date.now();ORBS.forEach(o=>{const ox=bgC.width*(o.x+Math.sin(T*o.spd+o.off)*.07),oy=bgC.height*(o.y+Math.cos(T*o.spd*1.3+o.off)*.06),r=Math.min(bgC.width,bgC.height)*o.r,g=bgX.createRadialGradient(ox,oy,0,ox,oy,r);g.addColorStop(0,o.c1);g.addColorStop(1,o.c2);bgX.fillStyle=g;bgX.fillRect(0,0,bgC.width,bgC.height);});requestAnimationFrame(drawBg);}drawBg();
+function drawBg(){if(bgC.width&&bgC.height){bgX.clearRect(0,0,bgC.width,bgC.height);const T=Date.now();ORBS.forEach(o=>{const ox=bgC.width*(o.x+Math.sin(T*o.spd+o.off)*.07),oy=bgC.height*(o.y+Math.cos(T*o.spd*1.3+o.off)*.06),r=Math.min(bgC.width,bgC.height)*o.r,g=bgX.createRadialGradient(ox,oy,0,ox,oy,r);g.addColorStop(0,o.c1);g.addColorStop(1,o.c2);bgX.fillStyle=g;bgX.fillRect(0,0,bgC.width,bgC.height);});}requestAnimationFrame(drawBg);}drawBg();
 
 // PARTICLES
 const pC=document.getElementById('particle-canvas'),pX=pC.getContext('2d');
-function resizeP(){pC.width=window.innerWidth;pC.height=window.innerHeight;}resizeP();
+function resizeP(){pC.width=window.innerWidth||screen.width||1920;pC.height=window.innerHeight||screen.height||1080;}resizeP();
 const PARTS=[];for(let i=0;i<60;i++)PARTS.push({x:Math.random()*pC.width,y:Math.random()*pC.height,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:1+Math.random()*2});
-function drawP(){pX.clearRect(0,0,pC.width,pC.height);PARTS.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=pC.width;if(p.x>pC.width)p.x=0;if(p.y<0)p.y=pC.height;if(p.y>pC.height)p.y=0;pX.beginPath();pX.arc(p.x,p.y,p.r,0,Math.PI*2);pX.fillStyle='rgba(0,255,136,.3)';pX.fill();});for(let i=0;i<PARTS.length;i++)for(let j=i+1;j<PARTS.length;j++){const dx=PARTS[i].x-PARTS[j].x,dy=PARTS[i].y-PARTS[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<130){pX.beginPath();pX.moveTo(PARTS[i].x,PARTS[i].y);pX.lineTo(PARTS[j].x,PARTS[j].y);pX.strokeStyle='rgba(0,255,136,'+(((1-d/130)*.05))+')';pX.lineWidth=.8;pX.stroke();}}requestAnimationFrame(drawP);}drawP();
+function drawP(){if(pC.width&&pC.height){pX.clearRect(0,0,pC.width,pC.height);PARTS.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=pC.width;if(p.x>pC.width)p.x=0;if(p.y<0)p.y=pC.height;if(p.y>pC.height)p.y=0;pX.beginPath();pX.arc(p.x,p.y,p.r,0,Math.PI*2);pX.fillStyle='rgba(0,255,136,.3)';pX.fill();});for(let i=0;i<PARTS.length;i++)for(let j=i+1;j<PARTS.length;j++){const dx=PARTS[i].x-PARTS[j].x,dy=PARTS[i].y-PARTS[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<130){pX.beginPath();pX.moveTo(PARTS[i].x,PARTS[i].y);pX.lineTo(PARTS[j].x,PARTS[j].y);pX.strokeStyle='rgba(0,255,136,'+(((1-d/130)*.05))+')';pX.lineWidth=.8;pX.stroke();}}}requestAnimationFrame(drawP);}drawP();
 
 // GRAIN
 const gr=document.getElementById('grain'),grX=gr.getContext('2d');
-function resizeGr(){gr.width=window.innerWidth;gr.height=window.innerHeight;}resizeGr();
-function drawGrain(){const id=grX.createImageData(gr.width,gr.height),d=id.data;for(let i=0;i<d.length;i+=4){const v=Math.random()*255;d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=18;}grX.putImageData(id,0,0);setTimeout(drawGrain,50);}drawGrain();
+function resizeGr(){gr.width=window.innerWidth||screen.width||1920;gr.height=window.innerHeight||screen.height||1080;}resizeGr();
+function drawGrain(){if(!gr.width||!gr.height){setTimeout(drawGrain,50);return;}try{const id=grX.createImageData(gr.width,gr.height),d=id.data;for(let i=0;i<d.length;i+=4){const v=Math.random()*255;d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=18;}grX.putImageData(id,0,0);}catch(e){}setTimeout(drawGrain,50);}drawGrain();
 window.addEventListener('resize',()=>{resizeBg();resizeP();resizeGr();});
 
 // HOLO TILT
